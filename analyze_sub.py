@@ -14,6 +14,8 @@ src_file = Path("Blinds.sub")
 
 # src_file = Path("blinds_sig2.sub")
 
+src_file = Path("blinds_sig4.sub")
+
 with src_file.open("r") as f:
     contents = f.read().replace("\r\n", "\n")
 
@@ -46,6 +48,12 @@ for l in contents.strip().split("\n"):
     # print()
 
     all_vals.extend(vals)
+
+all_vals = np.array(all_vals)
+
+assert np.all(np.sign(all_vals[::2]) == 1)
+assert np.all(np.sign(all_vals[1::2]) == -1)
+
 
 s = ""
 
