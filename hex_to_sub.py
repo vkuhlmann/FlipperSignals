@@ -10,7 +10,7 @@ Preset: FuriHalSubGhzPresetOok650Async
 Protocol: RAW
 """
 
-dst_file = Path("blinds_sig1.sub")
+# dst_file = Path("blinds_sig1.sub")
 
 with dst_file.open("w", encoding="ascii") as f:
     f.write(header)

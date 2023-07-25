@@ -12,6 +12,8 @@ Protocol: RAW
 
 src_file = Path("Blinds.sub")
 
+# src_file = Path("blinds_sig2.sub")
+
 with src_file.open("r") as f:
     contents = f.read().replace("\r\n", "\n")
 
@@ -26,10 +28,10 @@ long_signal = 836
 def decode_length(val):
     absv = np.abs(val)
 
-    if np.abs(absv) - short_signal < 100:
+    if np.abs(np.abs(absv) - short_signal) < 100:
         return "0"
     
-    if np.abs(absv) - long_signal < 100:
+    if np.abs(np.abs(absv) - long_signal) < 100:
         return "1"
     
     return f" ({val}) "
@@ -51,6 +53,8 @@ def decode_buffer(buf):
     # buf = buf.lstrip("0")
     if buf == "":
         return ""
+    
+    return buf
 
     buf += "0" * (8 - len(buf) % 8)
 
