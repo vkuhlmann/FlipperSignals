@@ -1,0 +1,10 @@
+Mode cool, fan 2
+
+25, Fan 2
+24, Fan 2
+23, Fan 2
+22, Fan 2
+22, Fan 1
+22, Fan auto
+
+21, Fan auto
