@@ -2,111 +2,90 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 import re
+from utils import read_contents
+from utils import extract_timings
 
-matcher_name = re.compile(r"\nname: (?P<name>[^\n]+)\n")
-matcher = re.compile(r"\ndata: (?P<data>[^\n]+)\n")
-
-with Path("airco/Remote.ir").open("r") as f:
-    contents = f.read()
-
-signals = []
-
-signals_even = []
-signals_odd = []
-
-
-def map_dur(dur):
-    # if dur >= 390 and dur < 406:
-    if dur >= 360 and dur < 406:
-        return "."
-    
-    # if dur >= 420 and dur < 450:
-    if dur >= 410 and dur < 465:
-        return "."
-        # return "1"
-    
-    # if dur >= 1200 and dur < 1239:
-    if dur >= 1100 and dur < 1239:
-        return "x"
-    
-    if dur >= 1240 and dur < 1290:
-        return "x"
-    
-    return f" ({dur}) "
-
-
-names = (a.group("name") for a in matcher_name.finditer(contents))
-
-for name, data in zip(names, matcher.finditer(contents), strict=True):
-    data = data.group("data")
-    data = data.split(" ")
-    data = [int(a) for a in data]
-
-    # print(len(data))
-    print()
-
-    signals.append(data)
-    signals_even.append(data[::2])
-    signals_odd.append(data[1::2])
-
-    s = []
-
-    for a in data:
-        s.append(map_dur(a))
-
-    line1 = ""
-    line2 = ""
-    pulse_dur = s[::2]
-    gap_dur = s[1::2]
-
-    if len(pulse_dur) < len(gap_dur):
-        pulse_dur.append("")
-
-    if len(gap_dur) < len(pulse_dur):
-        gap_dur.append("")
-
-    for a, b in zip(pulse_dur, gap_dur, strict=True):
-        val1 = str(a)
-        val2 = str(b)
-        length = max(len(val1), len(val2))
-
-        line1 += val1.rjust(length)
-        line2 += val2.rjust(length)
-
-        # s += f"{a:08b}"
-
-    # print(s[::2])
-    # print(s[1::2])
-    print(f"\n{name}:")
-    print(f"  Pulse: {line1}")
-    print(f"  Gap:   {line2}")
-    print()
-
-def plot_signals():
-    # all_signals = np.array(signals).flatten()
-    # all_signals = [a for a in all_signals if a < 3000]
-    # all_signals = [a for a in all_signals if a < 600]
-    # plt.hist(all_signals, bins=100)
-    # plt.show()
-
+def plot_signals_individual(signals, signals_even, signals_odd):
     for arr in [signals, signals_even, signals_odd]:
         plt.figure()
 
-        arr = np.array(signals).flatten()
+        arr = np.array(arr).flatten()
         arr = [a for a in arr if a < 3000]
-
-        arr = [a for a in arr if a >= 600]
-
+        # arr = [a for a in arr if a >= 600]
         # arr = [a for a in arr if a < 600]
         plt.hist(arr, bins=100)
 
     plt.show()
 
+def plot_signals_combined(signals_even, signals_odd):
+    plt.figure()
 
-    # signals_even = np.array(signals_even).flatten()
-    # all_signals = [a for a in all_signals if a < 3000]
-    # all_signals = [a for a in all_signals if a < 600]
-    # plt.hist(all_signals, bins=100)
-    # plt.show()
+    signals_even = np.array(signals_even).flatten()
+    signals_odd = np.array(signals_odd).flatten()
 
+    filter_func = lambda a: a < 2000
+
+    signals_even = list(filter(filter_func, signals_even))
+    signals_odd = list(filter(filter_func, signals_odd))
+
+    plt.hist([signals_even, signals_odd], bins=50, label=["pulse", "gap"])
+    plt.xlabel("Duration (us)")
+    plt.ylabel("Count")
+    plt.legend()
+    plt.show()
+
+
+def plot_signals_combined2(signals_even, signals_odd):
+    filter_funcs = [
+        lambda a: a < 4000,
+        lambda a: a >= 200 and a < 500,
+        lambda a: a >= 1100 and a < 1400,
+        lambda a: a >= 1600 and a < 3500
+    ]
+
+    f, ax = plt.subplots(len(filter_funcs), 2, sharex=False, figsize=(8, 10))
+
+    signals_even = np.array(signals_even).flatten()
+    signals_odd = np.array(signals_odd).flatten()
+
+
+    for i, current_ax, filter_func in zip(range(len(ax)), ax, filter_funcs, strict=True):
+
+        signals_even_filtered = list(filter(filter_func, signals_even))
+        signals_odd_filtered = list(filter(filter_func, signals_odd))
+
+        for a in current_ax:
+            a.hist([signals_even_filtered, signals_odd_filtered], bins=25, label=["pulse", "gap"])
+
+            if i == len(ax) - 1:
+                a.set_xlabel("Duration (us)")
+                a.set_ylabel("Count")
+        current_ax[1].set_yscale("log")
+    
+        if i == 0:
+            current_ax[1].legend()
+    # plt.legend()
+    plt.show()
+
+
+def main():
+    contents = read_contents("Remote_3.ir")
+    timings = extract_timings(contents)
+
+    all_timings = np.concatenate(
+        [np.array(a[1]) for a in timings]
+    )
+
+    even_timings = np.concatenate(
+        [np.array(a[1][::2]) for a in timings]
+    )
+
+    odd_timings = np.concatenate(
+        [np.array(a[1][1::2]) for a in timings]
+    )
+
+    plot_signals_combined2(even_timings, odd_timings)
+
+if __name__ == "__main__":
+    main()
 
