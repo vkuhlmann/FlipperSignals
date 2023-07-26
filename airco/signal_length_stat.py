@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import re
 
+matcher_name = re.compile(r"\nname: (?P<name>[^\n]+)\n")
 matcher = re.compile(r"\ndata: (?P<data>[^\n]+)\n")
 
 with Path("airco/Remote.ir").open("r") as f:
@@ -16,7 +17,7 @@ signals_odd = []
 
 def map_dur(dur):
     # if dur >= 390 and dur < 406:
-    if dur >= 380 and dur < 406:
+    if dur >= 360 and dur < 406:
         return "."
     
     # if dur >= 420 and dur < 450:
@@ -26,16 +27,18 @@ def map_dur(dur):
     
     # if dur >= 1200 and dur < 1239:
     if dur >= 1100 and dur < 1239:
-        return "2"
+        return "x"
     
-    if dur >= 1240 and dur < 1275:
-        return "3"
+    if dur >= 1240 and dur < 1290:
+        return "x"
     
     return f" ({dur}) "
 
 
-for val in matcher.finditer(contents):
-    data = val.group("data")
+names = (a.group("name") for a in matcher_name.finditer(contents))
+
+for name, data in zip(names, matcher.finditer(contents), strict=True):
+    data = data.group("data")
     data = data.split(" ")
     data = [int(a) for a in data]
 
@@ -46,15 +49,37 @@ for val in matcher.finditer(contents):
     signals_even.append(data[::2])
     signals_odd.append(data[1::2])
 
-    s = ""
+    s = []
 
     for a in data:
-        s += map_dur(a)
+        s.append(map_dur(a))
+
+    line1 = ""
+    line2 = ""
+    pulse_dur = s[::2]
+    gap_dur = s[1::2]
+
+    if len(pulse_dur) < len(gap_dur):
+        pulse_dur.append("")
+
+    if len(gap_dur) < len(pulse_dur):
+        gap_dur.append("")
+
+    for a, b in zip(pulse_dur, gap_dur, strict=True):
+        val1 = str(a)
+        val2 = str(b)
+        length = max(len(val1), len(val2))
+
+        line1 += val1.rjust(length)
+        line2 += val2.rjust(length)
 
         # s += f"{a:08b}"
 
-    print(s[::2])
-    print(s[1::2])
+    # print(s[::2])
+    # print(s[1::2])
+    print(f"\n{name}:")
+    print(f"  Pulse: {line1}")
+    print(f"  Gap:   {line2}")
     print()
 
 def plot_signals():
